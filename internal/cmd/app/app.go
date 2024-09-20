@@ -111,7 +111,6 @@ func Command() *cobra.Command {
 			if err != nil {
 				return fmt.Errorf("unable to get WATCH_NAMESPACE,the manager will watch and manage resources in all namespaces, err: %w", err)
 			}
-
 			// Add support for MultiNamespace set in WATCH_NAMESPACE (e.g ns1,ns2)
 			cacheConfig := map[string]cache.Config{}
 			if strings.Contains(watchNamespace, ",") {
@@ -121,6 +120,11 @@ func Command() *cobra.Command {
 						LabelSelector: labels.Everything(),
 						FieldSelector: fields.Everything(),
 					}
+				}
+			} else {
+				cacheConfig[watchNamespace] = cache.Config{
+					LabelSelector: labels.Everything(),
+					FieldSelector: fields.Everything(),
 				}
 			}
 

@@ -24,6 +24,7 @@ import (
 	"crypto/x509/pkix"
 	"encoding/pem"
 	"fmt"
+	"k8s.io/utils/ptr"
 	"net"
 	"net/url"
 	"strconv"
@@ -586,12 +587,15 @@ func (r *Route) buildNextCR(ctx context.Context, route *routev1.Route, revision 
 			Namespace:    route.Namespace,
 			Annotations:  map[string]string{cmapi.CertificateRequestRevisionAnnotationKey: strconv.Itoa(revision + 1)},
 			OwnerReferences: []metav1.OwnerReference{
-				*metav1.NewControllerRef(
-					route,
-					routev1.GroupVersion.WithKind("Route"),
-				),
-			},
-		},
+				{
+					APIVersion:         routev1.GroupVersion.String(),
+					Kind:               routev1.GroupVersion.WithKind("Route").Kind,
+					Name:               route.GetName(),
+					UID:                route.GetUID(),
+					BlockOwnerDeletion: ptr.To(false),
+					Controller:         ptr.To(true),
+				},
+			}},
 		Spec: cmapi.CertificateRequestSpec{
 			Duration: &metav1.Duration{Duration: duration},
 			IssuerRef: cmmeta.ObjectReference{
