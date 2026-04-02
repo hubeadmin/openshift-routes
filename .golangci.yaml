@@ -1,24 +1,32 @@
-issues:
-  exclude-rules:
-    - linters:
-        - staticcheck
-        - errcheck
-        - unconvert
-        - unparam
-        - dupword
-        - gosimple
-        - nilerr
-        - nilnil
-      text: ".*"
+version: "2"
 linters:
-  # Explicitly define all enabled linters
-  disable-all: true
+  default: none
+  exclusions:
+    generated: lax
+    presets: [comments, common-false-positives, legacy, std-error-handling]
+    rules:
+      - linters:
+          - dupword
+          - errcheck
+          - nilerr
+          - nilnil
+          - staticcheck
+          - unconvert
+          - unparam
+        text: .*
+    paths: [third_party, builtin$, examples$]
+    warn-unused: true
+  settings:
+    staticcheck:
+      checks: ["all", "-ST1000", "-ST1001", "-ST1003", "-ST1005", "-ST1012", "-ST1016", "-ST1020", "-ST1021", "-ST1022", "-QF1001", "-QF1003", "-QF1008"]
   enable:
     - asasalint
     - asciicheck
     - bidichk
     - bodyclose
+    - canonicalheader
     - contextcheck
+    - copyloopvar
     - decorder
     - dogsled
     - dupword
@@ -27,28 +35,27 @@ linters:
     - errchkjson
     - errname
     - exhaustive
-    - exportloopref
+    - exptostd
     - forbidigo
-    - gci
     - ginkgolinter
     - gocheckcompilerdirectives
     - gochecksumtype
     - gocritic
-    - gofmt
     - goheader
     - goprintffuncname
     - gosec
-    - gosimple
     - gosmopolitan
     - govet
     - grouper
     - importas
     - ineffassign
     - interfacebloat
+    - intrange
     - loggercheck
     - makezero
     - mirror
     - misspell
+    - modernize
     - musttag
     - nakedret
     - nilerr
@@ -62,19 +69,24 @@ linters:
     - sloglint
     - staticcheck
     - tagalign
-    - tenv
     - testableexamples
-    - typecheck
     - unconvert
     - unparam
     - unused
     - usestdlibvars
+    - usetesting
     - wastedassign
-linters-settings:
-  gci:
-    sections:
-      - standard # Standard section: captures all standard packages.
-      - default # Default section: contains all imports that could not be matched to another section type.
-      - prefix(github.com/cert-manager/openshift-routes) # Custom section: groups all imports with the specified Prefix.
-      - blank # Blank section: contains all blank imports. This section is not present unless explicitly enabled.
-      - dot # Dot section: contains all dot imports. This section is not present unless explicitly enabled.
+formatters:
+  enable: [gci, gofmt]
+  settings:
+    gci:
+      sections:
+        - standard # Standard section: captures all standard packages.
+        - default # Default section: contains all imports that could not be matched to another section type.
+        - localmodule # Local module section: contains all local packages. This section is not present unless explicitly enabled.
+        - blank # Blank section: contains all blank imports. This section is not present unless explicitly enabled.
+        - dot # Dot section: contains all dot imports. This section is not present unless explicitly enabled.
+      custom-order: true
+  exclusions:
+    generated: lax
+    paths: [third_party, builtin$, examples$]

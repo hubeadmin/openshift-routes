@@ -12,34 +12,37 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-oci_platforms ?= linux/amd64,linux/arm/v7,linux/arm64,linux/ppc64le
-
 # Use distroless as minimal base image to package the manager binary
 # To get latest SHA run "crane digest quay.io/jetstack/base-static:latest"
-base_image_static := quay.io/jetstack/base-static@sha256:9115b6b23bd3760a6d226b46a208c5ef317313ae8d0147fcd066db0903d24698
+base_image_static := quay.io/jetstack/base-static@sha256:a0fcf394ee936fae6dcce5d1ab682b4b012e099f384d6275eb10a2c1e598d177
 
 # Use custom apko-built image as minimal base image to package the manager binary
 # To get latest SHA run "crane digest quay.io/jetstack/base-static-csi:latest"
-base_image_csi-static := quay.io/jetstack/base-static-csi@sha256:3352a7b0b16c062658b4a43718ca7f08a7d3a402688069d39f6754dcf936189b
+base_image_csi-static := quay.io/jetstack/base-static-csi@sha256:b95159b7f145b2eb2439263a66799b836dd701684d8ddd18ca4892b6e4f20d1d
 
 # Utility functions
 fatal_if_undefined = $(if $(findstring undefined,$(origin $1)),$(error $1 is not set))
+fatal_if_deprecated_defined = $(if $(findstring undefined,$(origin $1)),,$(error $1 is deprecated, use $2 instead))
 
 # Validate globals that are required
-$(call fatal_if_undefined,bin_dir)
 $(call fatal_if_undefined,build_names)
 
 # Set default config values
 CGO_ENABLED ?= 0
 GOEXPERIMENT ?=  # empty by default
+oci_platforms ?= linux/amd64,linux/arm/v7,linux/arm64,linux/ppc64le
 
 # Default variables per build_names entry
 #
 # $1 - build_name
 define default_per_build_variables
-cgo_enabled_$1 ?= $(CGO_ENABLED)
-goexperiment_$1 ?= $(GOEXPERIMENT)
-oci_additional_layers_$1 ?= 
+go_$1_cgo_enabled ?= $(CGO_ENABLED)
+go_$1_goexperiment ?= $(GOEXPERIMENT)
+go_$1_flags ?= -tags=
+oci_$1_platforms ?= $(oci_platforms)
+oci_$1_additional_layers ?= 
+oci_$1_linux_capabilities ?= 
+oci_$1_build_args ?= 
 endef
 
 $(foreach build_name,$(build_names),$(eval $(call default_per_build_variables,$(build_name))))
@@ -48,6 +51,11 @@ $(foreach build_name,$(build_names),$(eval $(call default_per_build_variables,$(
 #
 # $1 - build_name
 define check_per_build_variables
+# Validate deprecated variables
+$(call fatal_if_deprecated_defined,cgo_enabled_$1,go_$1_cgo_enabled)
+$(call fatal_if_deprecated_defined,goexperiment_$1,go_$1_goexperiment)
+$(call fatal_if_deprecated_defined,oci_additional_layers_$1,oci_$1_additional_layers)
+
 # Validate required config exists
 $(call fatal_if_undefined,go_$1_ldflags)
 $(call fatal_if_undefined,go_$1_main_dir)
@@ -89,7 +97,7 @@ ifeq ($(wildcard $(go_$1_mod_dir)/go.mod),)
 $$(error go_$1_mod_dir "$(go_$1_mod_dir)" does not contain a go.mod file)
 endif
 ifeq ($(wildcard $(go_$1_mod_dir)/$(go_$1_main_dir)/main.go),)
-$$(error go_$1_main_dir "$(go_$1_mod_dir)" does not contain a main.go file)
+$$(error go_$1_main_dir "$(go_$1_mod_dir)/$(go_$1_main_dir)" does not contain a main.go file)
 endif
 
 # Validate the config required to build OCI images
@@ -97,6 +105,10 @@ ifneq ($(words $(oci_$1_image_name_development)),1)
 $$(error oci_$1_image_name_development "$(oci_$1_image_name_development)" should be a single image name)
 endif
 
+# Validate that the build name does not end in __local
+ifeq ($(1:%__local=__local),__local)
+$$(error build_name "$1" SHOULD NOT end in __local)
+endif
 endef
 
 $(foreach build_name,$(build_names),$(eval $(call check_per_build_variables,$(build_name))))
@@ -104,22 +116,20 @@ $(foreach build_name,$(build_names),$(eval $(call check_per_build_variables,$(bu
 # Create variables holding targets
 #
 # We create the following targets for each $(build_names)
-# - oci-build-$(build_name) = build the oci directory
+# - oci-build-$(build_name) = build the oci directory (multi-arch)
+# - oci-build-$(build_name)__local = build the oci directory (local arch: linux/$(HOST_ARCH))
 # - oci-load-$(build_name) = load the image into docker using the oci_$(build_name)_image_name_development variable
 # - docker-tarball-$(build_name) = build a "docker load" compatible tarball of the image
-# - ko-config-$(build_name) = generate "ko" config for a given build
 oci_build_targets := $(build_names:%=oci-build-%)
+oci_build_targets += $(build_names:%=oci-build-%__local)
 oci_load_targets := $(build_names:%=oci-load-%)
 docker_tarball_targets := $(build_names:%=docker-tarball-%)
-ko_config_targets := $(build_names:%=ko-config-%)
 
 # Derive config based on user config
 # 
 # - oci_layout_path_$(build_name) = path that the OCI image will be saved in OCI layout directory format
 # - oci_digest_path_$(build_name) = path to the file that will contain the digests
-# - ko_config_path_$(build_name) = path to the ko config file
 # - docker_tarball_path_$(build_name) = path that the docker tarball that the docker-tarball-$(build_name) will produce
-$(foreach build_name,$(build_names),$(eval oci_layout_path_$(build_name) := $(bin_dir)/scratch/image/oci-layout-$(build_name).$(oci_$(build_name)_image_tag)))
+$(foreach build_name,$(build_names),$(eval oci_layout_path_$(build_name) := $(bin_dir)/scratch/image/oci-layout-$(build_name)))
 $(foreach build_name,$(build_names),$(eval oci_digest_path_$(build_name) := $(CURDIR)/$(oci_layout_path_$(build_name)).digests))
-$(foreach build_name,$(build_names),$(eval ko_config_path_$(build_name) := $(CURDIR)/$(oci_layout_path_$(build_name)).ko_config.yaml))
 $(foreach build_name,$(build_names),$(eval docker_tarball_path_$(build_name) := $(CURDIR)/$(oci_layout_path_$(build_name)).docker.tar))

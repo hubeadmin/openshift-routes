@@ -15,14 +15,15 @@
 images_amd64 ?=
 images_arm64 ?=
 
-cert_manager_version := v1.15.3
+# renovate: datasource=github-releases packageName=cert-manager/cert-manager
+cert_manager_version := v1.20.1
 
-images_amd64 += quay.io/jetstack/cert-manager-controller:$(cert_manager_version)@sha256:631ba2b3bf7be0bd0d446b8bfcbeb56f8fe735cd02a267567a8d94682d03165b
-images_amd64 += quay.io/jetstack/cert-manager-cainjector:$(cert_manager_version)@sha256:6802c6afea2da91f5782880b79008179bb98147a23ce00f3cab5ba799807b5d6
-images_amd64 += quay.io/jetstack/cert-manager-webhook:$(cert_manager_version)@sha256:373e3acd7b96c87a574f9234bb4fbfd576e3205c502d6da5dade41165c9dc828
-images_amd64 += quay.io/jetstack/cert-manager-startupapicheck:$(cert_manager_version)@sha256:a896ff5d8029e5a040643935089ef0466fe0c1f6b2fe591f342994c53aada6e2
+images_amd64 += quay.io/jetstack/cert-manager-controller:$(cert_manager_version)@sha256:a6875f0ab2fbb7c7d93fd524b7fd1430c75c1e89d203005a0d22df15fa21a346
+images_amd64 += quay.io/jetstack/cert-manager-cainjector:$(cert_manager_version)@sha256:a11ce0607c2653f05a8da3b67023f45d662814c47fb01536b8836fe1043f429b
+images_amd64 += quay.io/jetstack/cert-manager-webhook:$(cert_manager_version)@sha256:72ef5f5b9128c1387505a7aad12dc2bd19c3d31c41790766b1f4b2d6a91da8fb
+images_amd64 += quay.io/jetstack/cert-manager-startupapicheck:$(cert_manager_version)@sha256:5000c49930dbc668de51868ddf721ca55b7378b03de7476ffb314950b9d55018
 
-images_arm64 += quay.io/jetstack/cert-manager-controller:$(cert_manager_version)@sha256:06fed982efd0c2b59736718ace9f7d482fda550d9398cc90b01a9ceb98c3fbb5
-images_arm64 += quay.io/jetstack/cert-manager-cainjector:$(cert_manager_version)@sha256:549347a89682abc0ede551b253a617defc398c7b2b1ede4c66cb71f33326c2d1
-images_arm64 += quay.io/jetstack/cert-manager-webhook:$(cert_manager_version)@sha256:51fe148d9e5269511f5fdac2db8cb64611acd6b118e5fcade00302442da33a8a
-images_arm64 += quay.io/jetstack/cert-manager-startupapicheck:$(cert_manager_version)@sha256:a15bfed2b625f7c97029ac4ba2777a13897a4492cc995cafda4594d30ab3d721
+images_arm64 += quay.io/jetstack/cert-manager-controller:$(cert_manager_version)@sha256:ab365558ac80523c27644d1c47e9e61ce8ec4acd9a03fadf9f404afb4ba21cad
+images_arm64 += quay.io/jetstack/cert-manager-cainjector:$(cert_manager_version)@sha256:3999703d97f33f0f646206b42eac98d35e8dd587d908c13b72a34b50c0ed8773
+images_arm64 += quay.io/jetstack/cert-manager-webhook:$(cert_manager_version)@sha256:f58fb1bdd70b9cf1f807ddbdfbddbbd3e86220a9b224709a9c607c3d2dff3b54
+images_arm64 += quay.io/jetstack/cert-manager-startupapicheck:$(cert_manager_version)@sha256:eeea7d068c2d626c0d34a3d29ebc36ce6e513a07180a35a5ab0189d558bff5e3
